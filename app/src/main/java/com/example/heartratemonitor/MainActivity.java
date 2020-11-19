@@ -24,11 +24,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import static java.lang.Math.abs;
 
 public class MainActivity extends FragmentActivity implements SensorEventListener {
     MediaPlayer alarm;
     AudioManager audio;
-    private TextView mTextView;
     private Sensor heartRate;
     Button start_record, save_record;
 
@@ -36,10 +39,11 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
     private  TextView Heart;
 
     private TextView Status;
+    private TextView hrold1,hrold2;
     private boolean permission_to_record = false;
     String Stat ="";
     String heartValue ="";
-    int mHeartRate;
+    int mHeartRate, HRold1,HRold2;
     float HRtimeRate,percent;
 
     int seventyVolume,currentVolume,maxVolume;
@@ -59,24 +63,28 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
         start_record = findViewById(R.id.Record);
         save_record = findViewById(R.id.Save);
         Status = (TextView) findViewById(R.id.status);
+        hrold1 = (TextView) findViewById(R.id.hrold1);
+        hrold2 = (TextView) findViewById(R.id.hrold2);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         currentVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         maxVolume = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         percent = 0.7f;
         seventyVolume = (int) (maxVolume*percent);
+        startMeasure();
+        HRold1 =70;
+        HRold2 =70;
         start_record.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 start_record.setBackgroundColor(Color.RED);
                 save_record.setBackgroundColor(Color.DKGRAY);
-                permission_to_record = true;
-                Toast.makeText(MainActivity.this,"Start Recording...", Toast.LENGTH_SHORT).show();
                 startMeasure();
-                mHeartRate = 490;
-
+                checkCondition();
+                Toast.makeText(MainActivity.this,"Start Recording...", Toast.LENGTH_SHORT).show();
             }
         });
+
         save_record.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -99,36 +107,50 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
             Heart.setText(Integer.toString(mHeartRate));
             heartValue = Integer.toString(mHeartRate);
         }
-        if (mHeartRate != 0){
-            checkCondition();
+        if (mHeartRate != 0 ){
+            start_record.setEnabled(true);
         }
+
     }
     public void checkCondition() {
 
-
         long[] pattern = {0, 1000, 1000};
 
-//        if (mHeartRate <= mHeartRate-50){
-//            if (HRtimeRate<5.0){
-//                Status.setText("Abnormal");
-//            }
-//            if (mHeartRate >= mHeartRate+50){
-//                if (HRtimeRate>10.0){
-//                    Status.setText("Abnormal");
-//                }
-//            else{
-                if (mHeartRate >= 50 && mHeartRate <= 100) {
-                    Status.setText("Normal");
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
 
-                } else {
-                    Status.setText("Abnormal");
+            @Override
+            public void run() {
+                HRold1 = mHeartRate;
+                hrold1.setText(Integer.toString(HRold1));
+            }
+        }, 0, 10000);
+        Timer timer2 = new Timer();
+        timer2.schedule(new TimerTask() {
 
-                    vibrator.vibrate(pattern, 0);
-                    alarmOn();
+            @Override
+            public void run() {
+                HRold2 = mHeartRate;
+                hrold2.setText(Integer.toString(HRold2));
+            }
+        }, 0, 5000);
+
+
+        if (abs(mHeartRate-HRold1) >50 || abs(mHeartRate-HRold2) > 50 ) {
+            Status.setText("Abnormal");
+            vibrator.vibrate(pattern, 0);
+            alarmOn();
+        }
+        else{
+            if (mHeartRate >= 50 && mHeartRate <= 160) {
+                Status.setText("Normal");
                 }
-//            }
-//
-//        }
+            else {
+                Status.setText("Abnormal");
+                vibrator.vibrate(pattern, 0);
+                alarmOn();
+                }
+            }
     }
 //}
     public void alarmOn(){
