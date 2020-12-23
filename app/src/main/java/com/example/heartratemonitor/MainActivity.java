@@ -44,7 +44,7 @@ public class MainActivity extends FragmentActivity implements SensorEventListene
     String Stat ="";
     String heartValue ="";
     int mHeartRate, HRold1,HRold2;
-    float HRtimeRate,percent;
+    float percent;
 
     int seventyVolume,currentVolume,maxVolume;
 
